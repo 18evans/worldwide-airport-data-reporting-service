@@ -7,7 +7,9 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 
 @Data
+@Entity
 public class Country {
+    @Id
     @CsvBindByName
     private int id;
     @CsvBindByName

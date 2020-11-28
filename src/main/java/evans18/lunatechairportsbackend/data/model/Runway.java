@@ -7,7 +7,9 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 
 @Data
+@Entity
 public class Runway {
+    @Id
     @CsvBindByName
     private int id;
     @CsvBindByName
