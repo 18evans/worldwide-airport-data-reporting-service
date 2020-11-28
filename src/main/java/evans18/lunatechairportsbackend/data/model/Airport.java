@@ -3,10 +3,13 @@ package evans18.lunatechairportsbackend.data.model;
 import com.opencsv.bean.CsvBindByName;
 import lombok.Data;
 
+import javax.persistence.Entity;
+import javax.persistence.Id;
+
 @Data
 public class Airport {
     @CsvBindByName
-    private String id;
+    private int id;
     @CsvBindByName
     private String ident;
     @CsvBindByName
@@ -14,11 +17,11 @@ public class Airport {
     @CsvBindByName
     private String name;
     @CsvBindByName
-    private String latitude_deg;
+    private double latitude_deg;
     @CsvBindByName
-    private String longitude_deg;
+    private double longitude_deg;
     @CsvBindByName
-    private String elevation_ft;
+    private double elevation_ft;
     @CsvBindByName
     private String continent;
     @CsvBindByName
