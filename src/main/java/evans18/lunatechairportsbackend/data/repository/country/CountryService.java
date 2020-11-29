@@ -22,6 +22,9 @@ import java.util.stream.Collectors;
 @Service
 @AllArgsConstructor
 public class CountryService {
+
+    private static final String DELIMITER_SEARCH_MULTI_TOKEN = " ";
+
     private final RestHighLevelClient elasticsearchClient;
 
     /**
@@ -29,25 +32,19 @@ public class CountryService {
      *
      * @param queryString - partial name of a country: may be exact, partial of a multi-word, prefix, suffix, white space delimited anywhere.
      */
-    public List<Country> searchCountryByPartialCountryName(String queryString) {
-        String aQueryWithPartialSearch;
+    public List<Country> searchCountryByPartialCountryNameOrCode(String queryString) {
+        String queryForPartialSearch;
 
-        //decide if multiple tokens
-        if (queryString.contains(" ")) {
+        if (queryString.contains(DELIMITER_SEARCH_MULTI_TOKEN)) { //multiple tokens
             String[] arrTokens = queryString.split("\\s+");
-            aQueryWithPartialSearch = Arrays.stream(arrTokens).map(p -> "*" + p + "*").collect(Collectors.joining(" "));
-        } else aQueryWithPartialSearch = "*" + queryString + "*";
+            queryForPartialSearch = Arrays.stream(arrTokens).map(p -> "*" + p + "*").collect(Collectors.joining(" "));
+        } else queryForPartialSearch = "*" + queryString + "*";
 
         //build queries
-        final BoolQueryBuilder aQuery = new BoolQueryBuilder()
-                .must(QueryBuilders.queryStringQuery(aQueryWithPartialSearch)
-//                        .defaultField("name")
-                );
-
-        //todo add name + code
-
         NativeSearchQuery nativeSearchQuery = new NativeSearchQueryBuilder()
-                .withQuery(aQuery)
+                .withQuery(new BoolQueryBuilder()
+                        .must(QueryBuilders.queryStringQuery(queryForPartialSearch))
+                )
                 .withSort(new ScoreSortBuilder().order(SortOrder.DESC)) //best hit score first
                 .build();
         //execute search

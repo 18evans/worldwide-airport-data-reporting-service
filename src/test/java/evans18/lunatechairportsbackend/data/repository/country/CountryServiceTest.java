@@ -9,8 +9,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -20,88 +18,12 @@ class CountryServiceTest {
 
     //#region fields
 
-    /**
-     * Keys are part prefix of country code.
-     * Irregular upper/lower character casing.
-     */
-    private static final Map<String, Map<String, String>> mapCountriesByStartingCountryCode = Map.of(
-            "D", Map.of(
-                    "DE", "Germany",
-                    "DJ", "Djibouti",
-                    "DK", "Denmark",
-                    "DM", "Dominica",
-                    "DO", "Dominican Republic",
-                    "DZ", "Algeria"
-            ),
-            "u", Map.of(
-                    "UA", "Ukraine",
-                    "UG", "Uganda",
-                    "UM", "United States Minor Outlying Islands",
-                    "US", "United States",
-                    "UY", "Uruguay",
-                    "UZ", "Uzbekistan"
-            ),
-            "r", Map.of(
-                    "RE", "Réunion",
-                    "RO", "Romania",
-                    "RS", "Serbia",
-                    "RU", "Russia",
-                    "RW", "Rwanda"
-            )
-    );
-    private static final Map<String, String> mapCountriesByCountryCode = Map.of(
-            "DE", "Germany",
-            "DJ", "Djibouti",
-            "DZ", "Algeria",
-            "UA", "Ukraine",
-            "US", "United States",
-            "UY", "Uruguay",
-            "UZ", "Uzbekistan",
-            "RU", "Russia",
-            "RW", "Rwanda"
-    );
-    private static final Set<String> setCountries = Set.of(
-            "Germany",
-            "Djibouti",
-            "Algeria",
-            "Ukraine",
-            "United States",
-            "Uruguay",
-            "Uzbekistan",
-            "Russia",
-            "Rwanda"
-    );
-    /**
-     * Keys are part prefix of country name.
-     * Irregular upper/lower character casing.
-     */
-    private static final Map<String, String> mapCountriesByStartingCountryName = Map.of(
-            "Ger", "Germany",
-            "dj", "Djibouti",
-            "AlgErI", "Algeria",
-            "ukRAI", "Ukraine",
-            "UniTE", "United States",
-            "uru", "Uruguay",
-            "uZbE", "Uzbekistan",
-            "russ", "Russia",
-            "RWAND", "Rwanda"
-    );
-
     @Autowired
     private CountryService service; //SUT
 
     //#endregion
 
-    //#region Helpers
-
-    private String generateFailMessageOnNoMatchPartialCountryStringInCollection(String query, String expectedCountry, Object[] collection) {
-        return "No expected country using given partial query in collection.\n" +
-                "Partial query : \t\"" + query + "\"\n" +
-                "Expected country : \t\"" + expectedCountry + "\"\n" +
-                "Actual collection: \t" + Arrays.deepToString(collection);
-    }
-
-    //#region Parameters
+    //#region Parameters Helpers
 
     /**
      * Partial and impartial ways to write country names for: Netherlands, United States and all other countries which may include that name.
@@ -133,7 +55,36 @@ class CountryServiceTest {
 
                 //case insensitive
                 Arguments.of("nEthErlaNds", netherlands),
-                Arguments.of("uniTED StaTEs", unitedStates)
+                Arguments.of("uniTED StaTEs", unitedStates),
+
+                //Maaike example :)
+                Arguments.of("zimb", "Zimbabwe")
+        );
+    }
+
+    private static Stream<Arguments> pairsPartialCountryCodeWithActualCountryNameAndCode() {
+        String germany = "Germany";
+        String germanyCode = "DE";
+
+        return Stream.of(
+                Arguments.of(germanyCode, germany, germanyCode), //exact
+                Arguments.of("dE", germany, germanyCode), //case-insensitive
+                Arguments.of("D", germany, germanyCode), //partial prefix
+                Arguments.of("d", germany, germanyCode), //partial prefix case-insensitive
+                Arguments.of("e", germany, germanyCode), //suffix prefix
+                Arguments.of("E", germany, germanyCode), //suffix prefix case-insensitive
+
+                //countries with country code having the prefix query
+                Arguments.of("D", germany, germanyCode),
+                Arguments.of("D", "Djibouti", "DJ"),
+                Arguments.of("D", "Denmark", "DK"),
+                Arguments.of("D", "Dominica", "DM"),
+                Arguments.of("D", "Dominican Republic", "DO"),
+                Arguments.of("D", "Algeria", "DZ"),
+
+                //countries with country code having the suffix query
+                Arguments.of("O", "Dominican Republic", "DO"),
+                Arguments.of("O", "Romania", "RO")
         );
     }
 
@@ -151,12 +102,35 @@ class CountryServiceTest {
     @MethodSource("pairsPartialCountryNameWithActualCountryName")
     void searchPartialCountryNameOnNameInputVariations(String queryPartialCountryName, String expectedCountryName) {
         //when
-        List<Country> foundCountries = service.searchCountryByPartialCountryName(queryPartialCountryName);
+        List<Country> foundCountries = service.searchCountryByPartialCountryNameOrCode(queryPartialCountryName);
 
+        String msgFailPartialNameMatch = "No expected country using given partial query in collection.\n" +
+                "Partial name query : \t\"" + queryPartialCountryName + "\"\n" +
+                "Expected country : \t\"" + expectedCountryName + "\"\n" +
+                "Actual collection: \t" + Arrays.deepToString(foundCountries.stream().map(Country::getName).toArray());
         //then
         assertTrue(foundCountries.stream()
                         .anyMatch(country -> country.getName().equals(expectedCountryName)),
-                generateFailMessageOnNoMatchPartialCountryStringInCollection(queryPartialCountryName, expectedCountryName, foundCountries.stream().map(Country::getName).toArray()));
+                msgFailPartialNameMatch);
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("pairsPartialCountryCodeWithActualCountryNameAndCode")
+    void searchPartialCountryCodeOnCodeInputVariations(String queryPartialCountryCode, String expectedCountryName, String expectedCountryCode) {
+        //when
+        List<Country> foundCountries = service.searchCountryByPartialCountryNameOrCode(queryPartialCountryCode);
+
+        String msgFailPartialCodeMatch = "No expected country using given partial query in collection.\n" +
+                "Partial query : \t\"" + queryPartialCountryCode + "\"\n" +
+                "Expected code : \t\"" + expectedCountryCode + "\"\n" +
+                "Expected country : \t\"" + expectedCountryName + "\"\n" +
+                "Actual collection: \t" + Arrays.deepToString(foundCountries.stream().map(Country::getName).toArray());
+
+        //then
+        assertTrue(foundCountries.stream()
+                        .anyMatch(country -> country.getName().equals(expectedCountryName) && country.getCode().equals(expectedCountryCode)),
+                msgFailPartialCodeMatch);
     }
 
     //#endregion
