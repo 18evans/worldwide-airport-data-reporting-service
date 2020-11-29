@@ -1,6 +1,7 @@
-package evans18.lunatechairportsbackend.data.repository.country;
+package evans18.lunatechairportsbackend.data.service;
 
 import evans18.lunatechairportsbackend.data.model.Country;
+import evans18.lunatechairportsbackend.data.repository.country.CountryService;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -92,6 +93,8 @@ class CountryServiceTest {
 
     //#region Tests
 
+    //#region Partial String Search
+
     /**
      * Asserts that a search for a country given a partial string of a country name, varying from exact, partial, prefix, suffix, (no)/whitespace
      * finds a country with the expected partial string.
@@ -114,7 +117,6 @@ class CountryServiceTest {
                 msgFailPartialNameMatch);
     }
 
-
     @ParameterizedTest
     @MethodSource("pairsPartialCountryCodeWithActualCountryNameAndCode")
     void searchPartialCountryCodeOnCodeInputVariations(String queryPartialCountryCode, String expectedCountryName, String expectedCountryCode) {
@@ -132,6 +134,8 @@ class CountryServiceTest {
                         .anyMatch(country -> country.getName().equals(expectedCountryName) && country.getCode().equals(expectedCountryCode)),
                 msgFailPartialCodeMatch);
     }
+
+    //#endregion
 
     //#endregion
 

@@ -1,11 +1,12 @@
 package evans18.lunatechairportsbackend.data.model;
 
 import com.opencsv.bean.CsvBindByName;
+import evans18.lunatechairportsbackend.Constants;
 import lombok.Data;
 import org.springframework.data.elasticsearch.annotations.Document;
 
 @Data
-@Document(indexName = "runway")
+@Document(indexName = Constants.DOCUMENT_INDEX_RUNWAYS)
 public class Runway {
     @CsvBindByName
     private int id;
