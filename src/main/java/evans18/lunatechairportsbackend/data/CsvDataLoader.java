@@ -4,9 +4,10 @@ import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import evans18.lunatechairportsbackend.data.model.Airport;
 import evans18.lunatechairportsbackend.data.model.Country;
-import evans18.lunatechairportsbackend.data.repository.AirportRepository;
-import evans18.lunatechairportsbackend.data.repository.RunwayRepository;
+import evans18.lunatechairportsbackend.data.model.Runway;
+import evans18.lunatechairportsbackend.data.repository.airport.AirportRepository;
 import evans18.lunatechairportsbackend.data.repository.country.CountryRepository;
+import evans18.lunatechairportsbackend.data.repository.runway.RunwayRepository;
 import lombok.AllArgsConstructor;
 import lombok.Cleanup;
 import org.slf4j.Logger;
@@ -43,7 +44,7 @@ public class CsvDataLoader {
     public void loadData() throws IOException, URISyntaxException {
         loadCSVData(CsvDataLoader.class.getResource(FILE_NAME_CSV_COUNTRIES), Country.class, countryRepo);
         loadCSVData(CsvDataLoader.class.getResource(FILE_NAME_CSV_AIRPORTS), Airport.class, airportRepo);
-//        loadCSVData(CsvDataLoader.class.getResource(FILE_NAME_CSV_RUNWAYS), Runway.class, runwayRepo);
+        loadCSVData(CsvDataLoader.class.getResource(FILE_NAME_CSV_RUNWAYS), Runway.class, runwayRepo);
     }
 
     private <T, ID> void loadCSVData(URL url, Class<T> clazz, CrudRepository<T, ID> repository) throws IOException, URISyntaxException {

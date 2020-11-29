@@ -30,8 +30,9 @@ public class AirportService {
 
     public static final TimeValue SCROLL_DEFAULT_TIMEOUT_DURATION = TimeValue.timeValueSeconds(15L);
     public static final int SCROLL_DEFAULT_HITS_COUNT_PER_SCROLL = 1000; //note: increasing value for countries with many airports reduces scroll search request count drastically
+    private static final Gson gson = new Gson();
+
     private final RestHighLevelClient client;
-    private final Gson gson = new Gson();
 
     public List<Airport> scrollSearchFindAllAirportsByCountryCode(String countryCode) throws IOException {
         //build initial search - initialize scroll session
