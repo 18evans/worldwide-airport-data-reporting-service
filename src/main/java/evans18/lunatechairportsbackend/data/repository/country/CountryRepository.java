@@ -6,5 +6,6 @@ import org.springframework.data.repository.CrudRepository;
 import java.util.List;
 
 public interface CountryRepository extends CrudRepository<Country, Integer> {
+    //todo support white space
     List<Country> findCountriesByNameStartingWithOrCodeStartingWith(String name, String code);
 }
