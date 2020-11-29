@@ -1,4 +1,4 @@
-package evans18.lunatechairportsbackend;
+package evans18.lunatechairportsbackend.configuration;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;

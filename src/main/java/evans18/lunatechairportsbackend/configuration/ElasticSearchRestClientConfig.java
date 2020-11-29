@@ -8,7 +8,7 @@ import org.springframework.data.elasticsearch.client.RestClients;
 import org.springframework.data.elasticsearch.config.AbstractElasticsearchConfiguration;
 
 @Configuration
-public class RestClientConfig extends AbstractElasticsearchConfiguration {
+public class ElasticSearchRestClientConfig extends AbstractElasticsearchConfiguration {
 
     @Override
     @Bean

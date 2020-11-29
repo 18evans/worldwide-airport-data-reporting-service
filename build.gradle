@@ -19,7 +19,7 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.springframework.data:spring-data-elasticsearch:4.0.5.RELEASE'
+	implementation 'org.springframework.data:spring-data-elasticsearch:4.1.1'
 
 	implementation 'com.opencsv:opencsv:5.2'
 	implementation 'org.springframework.boot:spring-boot-starter-security'

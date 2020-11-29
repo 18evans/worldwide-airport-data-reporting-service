@@ -3,6 +3,7 @@ package evans18.lunatechairportsbackend.data.model;
 import com.opencsv.bean.CsvBindByName;
 import lombok.Data;
 import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.elasticsearch.annotations.Field;
 
 @Data
 @Document(indexName = "country")
@@ -11,6 +12,7 @@ public class Country {
     private int id;
     @CsvBindByName
     private String code;
+    @Field
     @CsvBindByName
     private String name;
     @CsvBindByName
