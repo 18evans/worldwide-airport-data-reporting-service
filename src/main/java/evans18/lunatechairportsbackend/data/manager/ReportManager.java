@@ -59,9 +59,18 @@ public class ReportManager {
         }).collect(Collectors.toUnmodifiableList());
     }
 
-    //collect data in-memory O(C + A + R)
+    /**
+     * Gets each country's airports' runways' types and returns those bound to the country object in a Map.
+     * <p>
+     * Retrieval is done through getting separately runway, airport and country data and following
+     * group-by-like statements to bind the results across data types.
+     * <p>
+     * Note: seems to take 3-5 seconds. Bottleneck are the ES scroll search look-ups.
+     *
+     * @return - all country mappings for country with its airports' runway types.
+     * @throws IOException - on no connection to ES.
+     */
     public Map<Country, Set<String>> reportRunwayTypesInAllCountryAirports() throws IOException {
-
         //runways - all
         Stream<Runway> allRunways = StreamExtensions.getStream(runwayService.scrollSearchFindAllRunways())
                 .filter(runway -> !runway.getSurface().isBlank()); //no blanks (todo: why do some runways have "" surface??)

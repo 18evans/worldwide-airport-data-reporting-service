@@ -24,7 +24,7 @@ import java.util.List;
 public class ElasticSearchClient {
 
     public static final TimeValue SCROLL_DEFAULT_TIMEOUT_DURATION = TimeValue.timeValueSeconds(15L);
-    public static final int SCROLL_DEFAULT_HITS_COUNT_PER_SCROLL = 1000; //note: increasing value for countries with many airports reduces scroll search request count drastically
+    public static final int SCROLL_DEFAULT_HITS_COUNT_PER_SCROLL = 10000; //> 10k will crash //note: increasing value for countries with many airports reduces scroll search request count drastically
 
     private final RestHighLevelClient client;
 
@@ -85,7 +85,6 @@ public class ElasticSearchClient {
             scrollId = searchResponse.getScrollId();
             hits = searchResponse.getHits().getHits();
         }
-
 
         //clear scroll search context
         ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
