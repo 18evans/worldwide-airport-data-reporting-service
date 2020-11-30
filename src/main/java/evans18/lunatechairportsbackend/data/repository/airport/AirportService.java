@@ -1,6 +1,6 @@
 package evans18.lunatechairportsbackend.data.repository.airport;
 
-import evans18.lunatechairportsbackend.data.manager.ElasticSearchClient;
+import evans18.lunatechairportsbackend.data.manager.ElasticSearchClientManager;
 import evans18.lunatechairportsbackend.data.model.Airport;
 import evans18.lunatechairportsbackend.data.repository.ElasticSearchConstants;
 import evans18.lunatechairportsbackend.util.StreamExtensions;
@@ -22,8 +22,7 @@ public class AirportService {
 
     public static final int COUNTRY_LIST_LENGTH_CEILING_FOR_TOP_AIRPORT_COUNT = 10;
 
-    private final ElasticSearchClient client;
-    private final AirportRepository repository;
+    private final ElasticSearchClientManager clientManager;
 
     /**
      * Finds airports by a provided country code.
@@ -31,7 +30,7 @@ public class AirportService {
      * @throws IOException - on no connection to ES.
      */
     public List<Airport> scrollSearchFindAllAirportsByCountryCode(String countryCode) throws IOException {
-        return client.scrollSearch(ElasticSearchClient.buildScrollSearchRequest(
+        return clientManager.scrollSearch(ElasticSearchClientManager.buildScrollSearchRequest(
                 ElasticSearchConstants.DOCUMENT_INDEX_AIRPORTS,
                 matchQuery(ElasticSearchConstants.ES_DOC_AIRPORT_FIELD_ISO_COUNTRY_CODE, countryCode)) //search only by this field
                 , Airport.class);
@@ -43,7 +42,7 @@ public class AirportService {
      * @throws IOException - on no connection to ES.
      */
     public List<Airport> scrollSearchFindAllAirports() throws IOException {
-        return client.scrollSearchFindAll(
+        return clientManager.scrollSearchFindAll(
                 ElasticSearchConstants.DOCUMENT_INDEX_AIRPORTS,
                 Airport.class);
     }
@@ -59,7 +58,7 @@ public class AirportService {
      */
     //todo this entire operation should be done ideally by ES
     public LinkedHashMap<String, Integer> findCountryCodesOfCountriesWithTop10MostOrLeastAirports(boolean isMost) throws IOException {
-        Iterable<Airport> iterable = client.scrollSearchFindAll(ElasticSearchConstants.DOCUMENT_INDEX_AIRPORTS, Airport.class); //todo: note - this is the bottleneck until operations could be migrated to ES
+        Iterable<Airport> iterable = clientManager.scrollSearchFindAll(ElasticSearchConstants.DOCUMENT_INDEX_AIRPORTS, Airport.class); //todo: note - this is the bottleneck until operations could be migrated to ES
 
         //time: O(A)
         //space: O(C)

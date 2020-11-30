@@ -1,8 +1,8 @@
 package evans18.lunatechairportsbackend.data.repository.country;
 
+import evans18.lunatechairportsbackend.data.manager.ElasticSearchClientManager;
 import evans18.lunatechairportsbackend.data.model.Country;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.sort.ScoreSortBuilder;
@@ -24,6 +24,7 @@ import static evans18.lunatechairportsbackend.data.repository.ElasticSearchConst
 import static evans18.lunatechairportsbackend.data.repository.ElasticSearchConstants.ES_DOC_COUNTRY_FIELD_COUNTRY_NAME;
 
 
+
 @Service
 @RequiredArgsConstructor
 public class CountryService {
@@ -31,7 +32,7 @@ public class CountryService {
     private static final String DELIMITER_SEARCH_MULTI_TOKEN = " ";
     public static final Comparator<Country> COMPARATOR_COUNTRY_NAME_LENGTH = Comparator.comparingInt(country -> country.getName().length());
 
-    private final RestHighLevelClient elasticsearchClient;
+    private final ElasticSearchClientManager client;
 
     /**
      * Searches for countries by providing a partial variation of country's name or code.
@@ -57,8 +58,8 @@ public class CountryService {
                 .withSort(new ScoreSortBuilder().order(SortOrder.DESC)) //best hit score first
                 .build();
 
-        //execute search
-        return new ElasticsearchRestTemplate(elasticsearchClient)
+        //execute search //todo see if possible to migrate to Search API (currently using Search Template API)
+        return new ElasticsearchRestTemplate(client.getClient())
                 .search(nativeSearchQuery, Country.class);
     }
 

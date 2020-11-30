@@ -1,6 +1,7 @@
 package evans18.lunatechairportsbackend.data.manager;
 
 import evans18.lunatechairportsbackend.util.SerializationUtil;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -21,11 +22,12 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @Service
-public class ElasticSearchClient {
+public class ElasticSearchClientManager {
 
     public static final TimeValue SCROLL_DEFAULT_TIMEOUT_DURATION = TimeValue.timeValueSeconds(15L);
     public static final int SCROLL_DEFAULT_HITS_COUNT_PER_SCROLL = 10000; //> 10k will crash //note: increasing value for countries with many airports reduces scroll search request count drastically
 
+    @Getter
     private final RestHighLevelClient client;
 
     /**
