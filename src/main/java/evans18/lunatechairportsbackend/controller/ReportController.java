@@ -1,7 +1,9 @@
 package evans18.lunatechairportsbackend.controller;
 
 import evans18.lunatechairportsbackend.data.manager.ReportManager;
+import evans18.lunatechairportsbackend.data.model.Country;
 import evans18.lunatechairportsbackend.data.model.response.CountryWithAirportCount;
+import evans18.lunatechairportsbackend.data.model.response.CountryWithRunwayTypes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,8 +14,16 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Exposes GET endpoints that contain reports on the data.
+ * <p>
+ * Future note: Consider if data is going to be frequently updated and if that is not the case,
+ * then consider having a caching mechanism to store data in memory in stead of looking it up at each call.
+ */
 @RestController
 @RequestMapping("/report")
 @RequiredArgsConstructor
@@ -22,7 +32,8 @@ public class ReportController {
     private final ReportManager reportManager;
 
     /**
-     * Finds the countries
+     * Finds the countries with most/least airports and returns the top 10 in those categories sorted in the
+     * corresponding order.
      *
      * @param isMost - default value {@code true} - find countries with most airports. Else {@code false} those with least airports.
      * @return - sorted top 10 countries with most/least airports sorted by {@link CountryWithAirportCount#getAirportCount()}. Wrapper object.

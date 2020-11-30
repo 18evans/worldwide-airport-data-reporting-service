@@ -1,18 +1,24 @@
 package evans18.lunatechairportsbackend.data.manager;
 
+import evans18.lunatechairportsbackend.data.model.Airport;
 import evans18.lunatechairportsbackend.data.model.Country;
+import evans18.lunatechairportsbackend.data.model.Runway;
 import evans18.lunatechairportsbackend.data.repository.airport.AirportService;
 import evans18.lunatechairportsbackend.data.repository.country.CountryRepository;
+import evans18.lunatechairportsbackend.data.repository.runway.RunwayService;
+import evans18.lunatechairportsbackend.util.StreamExtensions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+/**
+ * todo: note: almost all of these can (should!) be done doing proper query to DB, however, haven't done with ElasticSearch before i'll just take the L and do it in-memory.
+ */
 @Service
 @RequiredArgsConstructor
 public class ReportManager {
@@ -32,6 +38,7 @@ public class ReportManager {
      * @throws IOException - on no connection to ES.
      */
     public List<Pair<Country, Integer>> reportTop10CountriesWithMostOrLeastAirports(boolean isMost) throws IOException {
+        //get all countries with their total airport count - K: country code V: airport count
         LinkedHashMap<String, Integer> sortedCountriesAirportCountByCode = airportService.findCountryCodesOfCountriesWithTop10MostOrLeastAirports(isMost); //already sorted
 
         //find in DB the country object identified by provided country codes
