@@ -1,7 +1,7 @@
 package evans18.lunatechairportsbackend.data.repository.country;
 
 import evans18.lunatechairportsbackend.data.model.Country;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -15,24 +15,29 @@ import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilde
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class CountryService {
 
     private static final String DELIMITER_SEARCH_MULTI_TOKEN = " ";
+    public static final Comparator<Country> COMPARATOR_COUNTRY_NAME_LENGTH = Comparator.comparingInt(country -> country.getName().length());
 
     private final RestHighLevelClient elasticsearchClient;
 
     /**
-     * Finds countries by providing a partial variation of their name.
+     * Searches for countries by providing a partial variation of country's name or code.
+     * Results are sorted by best search hits first (descending).
      *
      * @param queryString - partial name of a country: may be exact, partial of a multi-word, prefix, suffix, white space delimited anywhere.
+     * @return - wrapper of search hits for countries.
      */
-    public List<Country> searchCountryByPartialCountryNameOrCode(String queryString) {
+    private SearchHits<Country> searchCountriesByPartialCountryNameOrCode(String queryString) {
         String queryForPartialSearch;
 
         if (queryString.contains(DELIMITER_SEARCH_MULTI_TOKEN)) { //multiple tokens
@@ -47,19 +52,47 @@ public class CountryService {
                 )
                 .withSort(new ScoreSortBuilder().order(SortOrder.DESC)) //best hit score first
                 .build();
-        //execute search
-        SearchHits<Country> searchHits = new ElasticsearchRestTemplate(elasticsearchClient)
-                .search(nativeSearchQuery, Country.class);
 
-        //process
-        return searchHits.stream()
+        //execute search
+        return new ElasticsearchRestTemplate(elasticsearchClient)
+                .search(nativeSearchQuery, Country.class);
+    }
+
+    /**
+     * Searches and retrieves a country matching in its country name or code the given partial string.
+     * Retrieves single country with the most accurate score with the shortest country name length.
+     *
+     * @param queryString - partial country code or name.
+     * @return - optional of .
+     */
+    public Optional<Country> findTopCountryByPartialCountryNameOrCode(String queryString) {
+        SearchHits<Country> searchResults = searchCountriesByPartialCountryNameOrCode(queryString);
+
+        float scoreHighest = searchResults.getMaxScore();
+
+        return searchResults.stream()
+                .filter(hit -> hit.getScore() == scoreHighest) //todo: consider speed of filtering at ES search level
+                .map(SearchHit::getContent)
+                .min(COMPARATOR_COUNTRY_NAME_LENGTH);
+    }
+
+    /**
+     * Searches and retrieves all countries matching in its country name or code the given partial string.
+     * Results are sorted by most accurate score and then by shortest country name length.
+     *
+     * @param queryString - partial country code or name.
+     * @return - optional of .
+     */
+    public List<Country> findCountriesByPartialCountryNameOrCode(String queryString) {
+        return searchCountriesByPartialCountryNameOrCode(queryString).stream()
                 .sorted((o1, o2) -> {
-                    int cmpScore = -Float.compare(o1.getScore(), o2.getScore()); //best hit score first
+                    int cmpScore = -Float.compare(o1.getScore(), o2.getScore()); //best hit score first //note: this is already done at ES search level (i.e. maintaining)
                     if (cmpScore == 0)
-                        return Integer.compare(o1.getContent().getName().length(), o2.getContent().getName().length()); //sort by name length ASC //todo: there might be a script available to do this at search
+                        return COMPARATOR_COUNTRY_NAME_LENGTH.compare(o1.getContent(), o2.getContent()); //in addition - sort by name length //note: block only exists because of this line //todo: there should be an ES script to do this at search level
                     return cmpScore;
                 })
                 .map(SearchHit::getContent)
-                .collect(Collectors.toList());
+                .collect(Collectors.toUnmodifiableList());
     }
+
 }
