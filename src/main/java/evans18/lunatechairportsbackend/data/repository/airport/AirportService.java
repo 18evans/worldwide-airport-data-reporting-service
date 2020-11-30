@@ -32,6 +32,7 @@ public class AirportService {
     public static final TimeValue SCROLL_DEFAULT_TIMEOUT_DURATION = TimeValue.timeValueSeconds(15L);
     public static final int SCROLL_DEFAULT_HITS_COUNT_PER_SCROLL = 1000; //note: increasing value for countries with many airports reduces scroll search request count drastically
     private static final Gson gson = new Gson();
+    public static final int COUNTRY_LIST_LENGTH_CEILING_FOR_TOP_AIRPORT_COUNT = 10;
 
     private final RestHighLevelClient client;
     private final AirportRepository repository;
@@ -149,12 +150,12 @@ public class AirportService {
         /* Since we want only 10 elements they can be received following 10 iterative calls looking for the next biggest element
             and removing it from the pool of elements. Note, for removing from the pool needed is to recreate the map entry set.
             Due to our constant 10, for large quantities of countries, time complexity evaluates to linear O(C).
-            However for quantities under or equal to the constant then time it's exponential O(C^2)
+            However for quantities under or equal to the constant then time it's at least exponential O(C^2)
             Space: O(C)
 
-            If ever the constant 10 becomes larger or ever changing visit commented block under:
+            If ever the constant 10 becomes larger or ever changing visit commented block under.
          */
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < COUNTRY_LIST_LENGTH_CEILING_FOR_TOP_AIRPORT_COUNT; i++) {
 
             //get next most/least frequent
             Map.Entry<String, Integer> element = mapCountryCodeByAirportCount.entrySet().stream()
