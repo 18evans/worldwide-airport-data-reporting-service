@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 public class ReportManager {
 
     private final CountryRepository countryRepository;
+    private final RunwayService runwayService;
     private final AirportService airportService;
 
     /**
@@ -58,4 +59,37 @@ public class ReportManager {
         }).collect(Collectors.toUnmodifiableList());
     }
 
+    //collect data in-memory O(C + A + R)
+    public Map<Country, Set<String>> reportRunwayTypesInAllCountryAirports() throws IOException {
+
+        //runways - all
+        Stream<Runway> allRunways = StreamExtensions.getStream(runwayService.scrollSearchFindAllRunways())
+                .filter(runway -> !runway.getSurface().isBlank()); //no blanks (todo: why do some runways have "" surface??)
+
+        //runway types grouped by airport id
+        Map<Integer, Set<String>> runwayTypesByAirportId = allRunways
+                .collect(Collectors.groupingBy(Runway::getAirportRef, //group Runways by Airport Id KEY
+                        Collectors.mapping(Runway::getSurface, Collectors.toSet()) //also map VAL: all runways per KEY into a Set
+                ));
+
+        //note to self: each runway has an airport ID. But not all airports have a runway (??). Not all countries have airports.
+
+        //airports all
+        Stream<Airport> allAirports = StreamExtensions.getStream(airportService.scrollSearchFindAllAirports())
+                .filter(airport -> runwayTypesByAirportId.containsKey(airport.getId())); //only airports that have runways
+        //runway types grouped by country code
+        Map<String, Set<String>> runwayTypesByCountryCode = allAirports
+                .collect(Collectors.groupingBy(Airport::getIso_country, //group by Country Code KEY
+                        Collectors.flatMapping(airport -> runwayTypesByAirportId.get(airport.getId()).stream(),
+                                Collectors.toSet()) //map VAL: all runway type sets into one Set
+                ));
+
+        //country all
+        Stream<Country> allCountries = StreamExtensions.getStream(countryRepository.findAll()); //note: if too many results might need scroll search or larger index return window
+        //all runway types by country object
+        return allCountries
+                .collect(Collectors.toMap(country -> country,
+                        country -> runwayTypesByCountryCode.getOrDefault(country.getCode(), Collections.emptySet()) //get country's runway types. If country has no Runways, show no runway types
+                ));
+    }
 }

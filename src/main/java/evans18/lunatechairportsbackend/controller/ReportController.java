@@ -51,4 +51,21 @@ public class ReportController {
         }
     }
 
+    /**
+     * Gets a collection of all Countries along with all runway types within the airports of those countries.
+     *
+     * @return - collection of wrapper object for each country along with runway type.
+     */
+    @GetMapping("/country_runway_types")
+    List<CountryWithRunwayTypes> reportRunwayTypesInCountries() {
+        try {
+            Map<Country, Set<String>> countrySetMap = reportManager.reportRunwayTypesInAllCountryAirports();
+            return countrySetMap.entrySet().stream()
+                    .map(entry -> new CountryWithRunwayTypes(entry.getKey(), entry.getValue()))
+                    .collect(Collectors.toUnmodifiableList());
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal database server temporarily unavailable. :(");
+        }
+    }
+
 }
