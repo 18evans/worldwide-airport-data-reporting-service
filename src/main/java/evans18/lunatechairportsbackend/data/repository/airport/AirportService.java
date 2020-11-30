@@ -1,8 +1,8 @@
 package evans18.lunatechairportsbackend.data.repository.airport;
 
-import com.google.gson.Gson;
 import evans18.lunatechairportsbackend.data.model.Airport;
 import evans18.lunatechairportsbackend.data.repository.ElasticSearchConstants;
+import evans18.lunatechairportsbackend.util.SerializationUtil;
 import lombok.RequiredArgsConstructor;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -24,14 +24,12 @@ import java.util.stream.StreamSupport;
 
 import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
 
-
 @Service
 @RequiredArgsConstructor
 public class AirportService {
 
     public static final TimeValue SCROLL_DEFAULT_TIMEOUT_DURATION = TimeValue.timeValueSeconds(15L);
     public static final int SCROLL_DEFAULT_HITS_COUNT_PER_SCROLL = 1000; //note: increasing value for countries with many airports reduces scroll search request count drastically
-    private static final Gson gson = new Gson();
     public static final int COUNTRY_LIST_LENGTH_CEILING_FOR_TOP_AIRPORT_COUNT = 10;
 
     private final RestHighLevelClient client;
@@ -91,7 +89,7 @@ public class AirportService {
 
         while (hits != null && hits.length > 0) {
             //process hit items and store into list
-            parseSearchHitResultsAndPlaceIntoList(foundAirports, hits, Airport.class);
+            SerializationUtil.parseSearchHitResultsAndPlaceIntoList(foundAirports, hits, Airport.class);
 
             //build next scroll request
             SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId)
@@ -112,15 +110,6 @@ public class AirportService {
         client.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
 
         return foundAirports;
-    }
-
-    private <T> void parseSearchHitResultsAndPlaceIntoList(List<T> list, SearchHit[] searchHits, Class<T> clazz) {
-        list.addAll(Arrays.stream(searchHits)
-                .map(h ->
-                        gson.fromJson(h.getSourceAsString(), clazz)
-                )
-                .collect(Collectors.toList())
-        );
     }
 
     /**
