@@ -1,8 +1,8 @@
 package evans18.lunatechairportsbackend.data.repository.airport;
 
 import com.google.gson.Gson;
-import evans18.lunatechairportsbackend.Constants;
 import evans18.lunatechairportsbackend.data.model.Airport;
+import evans18.lunatechairportsbackend.data.repository.ElasticSearchConstants;
 import lombok.AllArgsConstructor;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -37,10 +37,10 @@ public class AirportService {
     public List<Airport> scrollSearchFindAllAirportsByCountryCode(String countryCode) throws IOException {
         //build initial search - initialize scroll session
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder() //note:
-                .query(matchQuery(Airport.AIRPORT_FIELD_COUNTRY_CODE, countryCode)) //note name must be equal to field
+                .query(matchQuery(ElasticSearchConstants.ES_DOC_AIRPORT_FIELD_COUNTRY_CODE, countryCode)) //search only in this field
                 .size(SCROLL_DEFAULT_HITS_COUNT_PER_SCROLL); //size per scroll. Note: affects how many scroll search requests in total will be done.
 
-        SearchRequest searchRequest = new SearchRequest(Constants.DOCUMENT_INDEX_AIRPORTS)
+        SearchRequest searchRequest = new SearchRequest(ElasticSearchConstants.DOCUMENT_INDEX_AIRPORTS)
                 .source(searchSourceBuilder)
                 .scroll(SCROLL_DEFAULT_TIMEOUT_DURATION); //time-out scrolling after 15 secs
 
