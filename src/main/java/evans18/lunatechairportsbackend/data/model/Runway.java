@@ -3,14 +3,18 @@ package evans18.lunatechairportsbackend.data.model;
 import com.opencsv.bean.CsvBindByName;
 import evans18.lunatechairportsbackend.data.repository.ElasticSearchConstants;
 import lombok.Data;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 
 @Data
 @Document(indexName = ElasticSearchConstants.DOCUMENT_INDEX_RUNWAYS)
 public class Runway {
+    @Id
     @CsvBindByName
     private int id;
     /**
+     * Foreign key for Airport id.
+     * <p>
      * Note Query expression {@link evans18.lunatechairportsbackend.data.repository.runway.RunwayRepository#findAllByAirportRef(int)}
      * demands variables to not have underscore character.
      */

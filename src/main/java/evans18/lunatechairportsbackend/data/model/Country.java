@@ -3,12 +3,14 @@ package evans18.lunatechairportsbackend.data.model;
 import com.opencsv.bean.CsvBindByName;
 import evans18.lunatechairportsbackend.data.repository.ElasticSearchConstants;
 import lombok.Data;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 
 @Data
 @Document(indexName = ElasticSearchConstants.DOCUMENT_INDEX_COUNTRIES)
 public class Country {
+    @Id
     @CsvBindByName
     private int id;
     /**
