@@ -3,7 +3,7 @@ package evans18.lunatechairportsbackend.data.repository.airport;
 import com.google.gson.Gson;
 import evans18.lunatechairportsbackend.data.model.Airport;
 import evans18.lunatechairportsbackend.data.repository.ElasticSearchConstants;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -11,39 +11,77 @@ import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
 
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class AirportService {
 
     public static final TimeValue SCROLL_DEFAULT_TIMEOUT_DURATION = TimeValue.timeValueSeconds(15L);
     public static final int SCROLL_DEFAULT_HITS_COUNT_PER_SCROLL = 1000; //note: increasing value for countries with many airports reduces scroll search request count drastically
     private static final Gson gson = new Gson();
+    public static final int COUNTRY_LIST_LENGTH_CEILING_FOR_TOP_AIRPORT_COUNT = 10;
 
     private final RestHighLevelClient client;
+    private final AirportRepository repository;
 
+    /**
+     * Finds airports by a provided country code.
+     *
+     * @throws IOException - on no connection to ES.
+     */
     public List<Airport> scrollSearchFindAllAirportsByCountryCode(String countryCode) throws IOException {
-        //build initial search - initialize scroll session
-        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder() //note:
-                .query(matchQuery(ElasticSearchConstants.ES_DOC_AIRPORT_FIELD_COUNTRY_CODE, countryCode)) //search only in this field
+        return scrollSearch(buildScrollSearchRequest(
+                matchQuery(ElasticSearchConstants.ES_DOC_AIRPORT_FIELD_ISO_COUNTRY_CODE, countryCode)) //search only by this field
+        );
+    }
+
+    /**
+     * Finds all Airplanes but using scroll search with default configurations.
+     *
+     * @throws IOException - on no connection to ES.
+     * @see AirportRepository#findAll()
+     */
+    //todo: should be a simple way through the Elastic client configurator to increase the max window size.
+    private List<Airport> scrollSearchFindAll() throws IOException {
+        return scrollSearch(buildScrollSearchRequest(null));
+    }
+
+    /**
+     * Builds a request for scroll search using default configurations for each scroll's size and scroll timeout.
+     *
+     * @param qb - nullable query builder. {@link Nullable} seems to be introducing interesting build warning "warning: unknown enum constant When.MAYBE". See @see <a href="https://stackoverflow.com/questions/53326271/spring-nullable-annotation-generates-unknown-enum-constant-warning">here</a>
+     */
+    private SearchRequest buildScrollSearchRequest(@Nullable MatchQueryBuilder qb) {
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+                .query(qb) //nullable
                 .size(SCROLL_DEFAULT_HITS_COUNT_PER_SCROLL); //size per scroll. Note: affects how many scroll search requests in total will be done.
 
-        SearchRequest searchRequest = new SearchRequest(ElasticSearchConstants.DOCUMENT_INDEX_AIRPORTS)
+        //build request
+        return new SearchRequest(ElasticSearchConstants.DOCUMENT_INDEX_AIRPORTS)
                 .source(searchSourceBuilder)
                 .scroll(SCROLL_DEFAULT_TIMEOUT_DURATION); //time-out scrolling after 15 secs
+    }
 
+    /**
+     * Methods allows searching beyound the ElasticSearch setting limit for index window size.
+     * Note: Well... it's probly set low for a reason but whatevz for demo.
+     *
+     * @throws IOException - on no connection to ES.
+     */
+    private List<Airport> scrollSearch(SearchRequest searchRequest) throws IOException {
         //execute initial search
         SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);//.toBuilder().setRequestConfig(RequestConfig));
         String scrollId = searchResponse.getScrollId();
@@ -84,4 +122,65 @@ public class AirportService {
                 .collect(Collectors.toList())
         );
     }
+
+    /**
+     * /**
+     * Goes through all airports in the repository to find the countries with most/least many airports and returns the top 10.
+     *
+     * @param isMost - {@code true} if looking for countries with most airports. Else countries with least.
+     * @return - sorted order of the codes of countries that have the most or least airports (denoted by param)
+     * @throws IOException - on no connection to ES.
+     */
+    //todo this entire operation should be done ideally by ES
+    public LinkedHashMap<String, Integer> findCountryCodesOfCountriesWithTop10MostOrLeastAirports(boolean isMost) throws IOException {
+        Iterable<Airport> iterable = scrollSearchFindAll(); //todo: note - this is the bottleneck until operations could be migrated to ES
+
+        //time: O(A)
+        //space: O(C)
+        Map<String, Integer> mapCountryCodeByAirportCount = StreamSupport.stream(iterable.spliterator(), false) //stream on all airports
+                .collect(Collectors.groupingBy(Airport::getIso_country, Collectors.summingInt(x -> 1)));
+
+
+        LinkedHashMap<String, Integer> sortedCountryCodesByCount = new LinkedHashMap<>();
+
+        //for more readability but duplicate if checks handle comparison inside loop
+        Comparator<Map.Entry<String, Integer>> comparator = Comparator.comparingLong(Map.Entry::getValue); //asc order
+        if (!isMost) comparator = comparator.reversed(); //desc order
+
+        /* Since we want only 10 elements they can be received following 10 iterative calls looking for the next biggest element
+            and removing it from the pool of elements. Note, for removing from the pool needed is to recreate the map entry set.
+            Due to our constant 10, for large quantities of countries, time complexity evaluates to linear O(C).
+            However for quantities under or equal to the constant then time it's at least exponential O(C^2)
+            Space: O(C)
+
+            If ever the constant 10 becomes larger or ever changing visit commented block under.
+         */
+        for (int i = 0; i < COUNTRY_LIST_LENGTH_CEILING_FOR_TOP_AIRPORT_COUNT; i++) {
+
+            //get next most/least frequent
+            Map.Entry<String, Integer> element = mapCountryCodeByAirportCount.entrySet().stream()
+                    .max(comparator) //max according TO comparator
+                    .orElse(null);
+
+            if (element == null) //no more elements
+                break;
+
+            String countryCode = element.getKey();
+            int airportCount = element.getValue();
+
+            mapCountryCodeByAirportCount.remove(countryCode); //remove from pool
+            sortedCountryCodesByCount.put(countryCode, airportCount);
+        }
+
+        return sortedCountryCodesByCount;
+
+        //sort Map by count using TreeMap through min-heap structure implementation
+        //time: O(C log C)
+        //space: O(C)
+//        TreeMap<Long, Map.Entry<String, Long>> sortedByCount = new TreeMap<>(comparator); //highest count first
+//        mapCountryCodeByAirportCount.entrySet().forEach(stringLongEntry -> sortedByCount.put(stringLongEntry.getValue(), stringLongEntry));
+
+        //note: also valid to explore directly sorting map's entryset through stream().sorted() api
+    }
+
 }

@@ -34,8 +34,8 @@ public class Airport {
      * Searchable field.
      */
     @CsvBindByName
-    @SerializedName(ElasticSearchConstants.ES_DOC_AIRPORT_FIELD_COUNTRY_CODE)
-    @Field(ElasticSearchConstants.ES_DOC_AIRPORT_FIELD_COUNTRY_CODE)
+    @SerializedName(ElasticSearchConstants.ES_DOC_AIRPORT_FIELD_ISO_COUNTRY_CODE)
+    @Field(ElasticSearchConstants.ES_DOC_AIRPORT_FIELD_ISO_COUNTRY_CODE)
     private String iso_country;
     @CsvBindByName
     private String municipality;
