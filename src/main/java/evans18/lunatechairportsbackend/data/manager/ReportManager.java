@@ -101,4 +101,12 @@ public class ReportManager {
                         country -> runwayTypesByCountryCode.getOrDefault(country.getCode(), Collections.emptySet()) //get country's runway types. If country has no Runways, show no runway types
                 ));
     }
+
+    /**
+     * @return - sorted list of 10 most frequent {@link Runway#getLe_ident()}.
+     * @throws IOException - on no connection to ES.
+     */
+    public List<String> reportTop10MostFrequentRunwayIdentifications() throws IOException {
+        return runwayService.getTopMostFrequentRunwayIdentifications(10);
+    }
 }

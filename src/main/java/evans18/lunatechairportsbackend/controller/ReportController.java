@@ -2,6 +2,7 @@ package evans18.lunatechairportsbackend.controller;
 
 import evans18.lunatechairportsbackend.data.manager.ReportManager;
 import evans18.lunatechairportsbackend.data.model.Country;
+import evans18.lunatechairportsbackend.data.model.Runway;
 import evans18.lunatechairportsbackend.data.model.response.CountryWithAirportCount;
 import evans18.lunatechairportsbackend.data.model.response.CountryWithRunwayTypes;
 import lombok.RequiredArgsConstructor;
@@ -63,6 +64,20 @@ public class ReportController {
             return countrySetMap.entrySet().stream()
                     .map(entry -> new CountryWithRunwayTypes(entry.getKey(), entry.getValue()))
                     .collect(Collectors.toUnmodifiableList());
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal database server temporarily unavailable. :(");
+        }
+    }
+
+    /**
+     * Gets the top 10 most frequent {@link Runway#getLe_ident()}.
+     *
+     * @return - a sorted by popularity list of the 10 Strings containing {@link Runway#getLe_ident()}.
+     */
+    @GetMapping("/top10_frequent_runaway_le_ident")
+    List<String> reportTop10MostFrequentRunwayIdentifications() {
+        try {
+            return reportManager.reportTop10MostFrequentRunwayIdentifications();
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal database server temporarily unavailable. :(");
         }
