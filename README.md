@@ -1,4 +1,6 @@
-##Requirements
+#Requirements
+
+
 #### *ElasticSearch*
 Application leverages an *ElasticSearch* instance to perform multi-column wildcard look-ups in its repository.
 Make sure you have elasticsearch running on port 9200 before running application.
