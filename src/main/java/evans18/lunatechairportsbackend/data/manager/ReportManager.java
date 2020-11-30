@@ -43,8 +43,10 @@ public class ReportManager {
         LinkedHashMap<String, Integer> sortedCountriesAirportCountByCode = airportService.findCountryCodesOfCountriesWithTop10MostOrLeastAirports(isMost); //already sorted
 
         //find in DB the country object identified by provided country codes
-        Map<String, Country> countries = countryRepository.findAllByCodeIsIn(sortedCountriesAirportCountByCode.keySet()) //one DB call note: doesn't maintain order of input
-                .stream()
+
+        Map<String, Country> countries = StreamExtensions.getStream(countryRepository.findAll())
+                .filter(country -> sortedCountriesAirportCountByCode.containsKey(country.getCode()))
+//                countryRepository.findAllByCodeIsIn(sortedCountriesAirportCountByCode.keySet()) //one DB call note: doesn't maintain order of input (todo: why did this stop working??)
                 .collect(Collectors.toMap(Country::getCode, c -> c)); //transform to map for constant look-up of code
 
         //now both collections are keyed by Country Code
