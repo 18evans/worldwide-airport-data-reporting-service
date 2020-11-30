@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
@@ -129,20 +128,20 @@ public class AirportService {
      * @return - sorted order of the codes of countries that have the most or least airports (denoted by param)
      * @throws IOException - on no connection to ES.
      */
-    //todo this should be done ideally by ES
-    public LinkedHashMap<String, Long> findCountryCodesOfCountriesWithTop10MostOrLeastAirports(boolean isMost) throws IOException {
-        Iterable<Airport> iterable = scrollSearchFindAll();
+    //todo this entire operation should be done ideally by ES
+    public LinkedHashMap<String, Integer> findCountryCodesOfCountriesWithTop10MostOrLeastAirports(boolean isMost) throws IOException {
+        Iterable<Airport> iterable = scrollSearchFindAll(); //todo: note - this is the bottleneck until operations could be migrated to ES
 
         //time: O(A)
         //space: O(C)
-        Map<String, Long> mapCountryCodeByAirportCount = StreamSupport.stream(iterable.spliterator(), false) //stream on all airports
-                .collect(Collectors.groupingBy(Airport::getIso_country, Collectors.counting()));
+        Map<String, Integer> mapCountryCodeByAirportCount = StreamSupport.stream(iterable.spliterator(), false) //stream on all airports
+                .collect(Collectors.groupingBy(Airport::getIso_country, Collectors.summingInt(x -> 1)));
 
 
-        LinkedHashMap<String, Long> sortedCountryCodesByCount = new LinkedHashMap<>();
+        LinkedHashMap<String, Integer> sortedCountryCodesByCount = new LinkedHashMap<>();
 
         //for more readability but duplicate if checks handle comparison inside loop
-        Comparator<Map.Entry<String, Long>> comparator = Comparator.comparingLong(Map.Entry::getValue); //asc order
+        Comparator<Map.Entry<String, Integer>> comparator = Comparator.comparingLong(Map.Entry::getValue); //asc order
         if (!isMost) comparator = comparator.reversed(); //desc order
 
         /* Since we want only 10 elements they can be received following 10 iterative calls looking for the next biggest element
@@ -154,17 +153,17 @@ public class AirportService {
             If ever the constant 10 becomes larger or ever changing visit commented block under:
          */
         for (int i = 0; i < 10; i++) {
-            Stream<Map.Entry<String, Long>> entryStream = mapCountryCodeByAirportCount.entrySet().stream();
 
             //get next most/least frequent
-            Map.Entry<String, Long> element = entryStream.max(comparator) //max according TO comparator
+            Map.Entry<String, Integer> element = mapCountryCodeByAirportCount.entrySet().stream()
+                    .max(comparator) //max according TO comparator
                     .orElse(null);
 
             if (element == null) //no more elements
                 break;
 
             String countryCode = element.getKey();
-            long airportCount = element.getValue();
+            int airportCount = element.getValue();
 
             mapCountryCodeByAirportCount.remove(countryCode); //remove from pool
             sortedCountryCodesByCount.put(countryCode, airportCount);

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,17 +31,24 @@ public class ReportManager {
      * @return - sorted order of the country airports count bound to the country name.
      * @throws IOException - on no connection to ES.
      */
-    public List<Pair<String, Long>> reportTop10CountriesWithMostOrLeastAirports(boolean isMost) throws IOException {
-        LinkedHashMap<String, Long> countryCodesWithCount = airportService.findCountryCodesOfCountriesWithTop10MostOrLeastAirports(isMost); //already sorted
+    public List<Pair<Country, Integer>> reportTop10CountriesWithMostOrLeastAirports(boolean isMost) throws IOException {
+        LinkedHashMap<String, Integer> sortedCountriesAirportCountByCode = airportService.findCountryCodesOfCountriesWithTop10MostOrLeastAirports(isMost); //already sorted
 
-        //look-up DB for country names
-        Set<Country> countries = countryRepository.findAllByCodeIsIn(countryCodesWithCount.keySet()); //one DB call
+        //find in DB the country object identified by provided country codes
+        Map<String, Country> countries = countryRepository.findAllByCodeIsIn(sortedCountriesAirportCountByCode.keySet()) //one DB call note: doesn't maintain order of input
+                .stream()
+                .collect(Collectors.toMap(Country::getCode, c -> c)); //transform to map for constant look-up of code
 
-        //map
-        return countries.stream().map(country -> {
-            long airportCount = countryCodesWithCount.get(country.getCode());
-            return Pair.of(country.getName(), airportCount);
-        })
-                .collect(Collectors.toList());
+        //now both collections are keyed by Country Code
+
+        //maintaining sorted order of top country query get name from country query
+        return sortedCountriesAirportCountByCode.entrySet().stream().map(entry -> {
+            String code = entry.getKey();
+            Country country = countries.get(code);
+
+            int airportCount = entry.getValue();
+            return Pair.of(country, airportCount);
+        }).collect(Collectors.toUnmodifiableList());
     }
+
 }
