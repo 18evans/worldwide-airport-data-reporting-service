@@ -20,6 +20,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static evans18.lunatechairportsbackend.data.repository.ElasticSearchConstants.ES_DOC_COUNTRY_FIELD_COUNTRY_CODE;
+import static evans18.lunatechairportsbackend.data.repository.ElasticSearchConstants.ES_DOC_COUNTRY_FIELD_COUNTRY_NAME;
+
 
 @Service
 @RequiredArgsConstructor
@@ -50,6 +53,7 @@ public class CountryService {
                 .withQuery(new BoolQueryBuilder()
                         .must(QueryBuilders.queryStringQuery(queryForPartialSearch))
                 )
+                .withFields(ES_DOC_COUNTRY_FIELD_COUNTRY_NAME, ES_DOC_COUNTRY_FIELD_COUNTRY_CODE) //fields to look in
                 .withSort(new ScoreSortBuilder().order(SortOrder.DESC)) //best hit score first
                 .build();
 

@@ -43,7 +43,7 @@ public class AirportService {
      */
     public List<Airport> scrollSearchFindAllAirportsByCountryCode(String countryCode) throws IOException {
         return scrollSearch(buildScrollSearchRequest(
-                matchQuery(ElasticSearchConstants.ES_DOC_AIRPORT_FIELD_COUNTRY_CODE, countryCode)) //search only by this field
+                matchQuery(ElasticSearchConstants.ES_DOC_AIRPORT_FIELD_ISO_COUNTRY_CODE, countryCode)) //search only by this field
         );
     }
 
@@ -60,6 +60,8 @@ public class AirportService {
 
     /**
      * Builds a request for scroll search using default configurations for each scroll's size and scroll timeout.
+     *
+     * @param qb - nullable query builder. {@link Nullable} seems to be introducing interesting build warning "warning: unknown enum constant When.MAYBE". See @see <a href="https://stackoverflow.com/questions/53326271/spring-nullable-annotation-generates-unknown-enum-constant-warning">here</a>
      */
     private SearchRequest buildScrollSearchRequest(@Nullable MatchQueryBuilder qb) {
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
